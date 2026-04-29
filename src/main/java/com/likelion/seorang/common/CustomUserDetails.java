@@ -5,20 +5,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 
-
-// 유저 상세 정보
 public class CustomUserDetails implements UserDetails {
 
-    private final Long id;       // PK
-    private final String username;  // 로그인 아이디
-    private final String password;
+    private final Long id;
+    private final String username;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserDetails(Long id, String username, String password,
+    public CustomUserDetails(Long id, String username,
                              Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
-        this.password = password;
         this.authorities = authorities;
     }
 
@@ -31,9 +27,10 @@ public class CustomUserDetails implements UserDetails {
         return authorities;
     }
 
+    // 비밀번호 로그인 안 쓸 거면 빈 문자열 반환
     @Override
     public String getPassword() {
-        return password;
+        return "";
     }
 
     @Override
@@ -46,4 +43,3 @@ public class CustomUserDetails implements UserDetails {
     @Override public boolean isCredentialsNonExpired() { return true; }
     @Override public boolean isEnabled() { return true; }
 }
-

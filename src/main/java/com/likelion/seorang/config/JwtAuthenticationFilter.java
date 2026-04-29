@@ -82,14 +82,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             token = token.replaceAll("\\s+", "");
 
             try {
-                // 1) 토큰 파싱
                 String userId = jwtProvider.getSubject(token);
 
-                // 2) 유저 로드
-                CustomUserDetails user = (CustomUserDetails) userDetailsService.loadUserByUsername(userId);
+                CustomUserDetails userDetails =
+                        (CustomUserDetails) userDetailsService.loadUserByUsername(userId);
 
-                // 3) 컨텍스트 설정
-                var auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                var auth = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
             } catch (ExpiredJwtException
