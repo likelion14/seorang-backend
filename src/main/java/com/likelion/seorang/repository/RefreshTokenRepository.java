@@ -9,35 +9,30 @@ import java.time.Duration;
 
 @Repository
 @RequiredArgsConstructor
-// Redis 기반으로 리프레시 토큰의 저장/조회/삭제 기능을 제공하는 클래스
-// 예전 플젝 코드 가져온거라 매개변수가 email로 되어있는데 수정해서 사용하면 됨~~
 public class RefreshTokenRepository {
-    private final StringRedisTemplate redisTemplate; // Redis 클라이언트
 
-    @Value("${app.jwt.refresh-exp-day}")
-    private long refreshExpDay;
+    private final StringRedisTemplate redisTemplate;
 
-    // 리프레시 토큰 저장
-    public void save(String email, String refreshToken) {
+    @Value("${jwt.refresh-exp-millis}")
+    private long refreshExpMillis;
+
+    public void save(Long userId, String refreshToken) {
         redisTemplate.opsForValue().set(
-                key(email), refreshToken,
-                Duration.ofDays(refreshExpDay)
+                key(userId),
+                refreshToken,
+                Duration.ofMillis(refreshExpMillis)
         );
     }
 
-    // 리프레시 토큰 조회
-    public String find(String email) {
-        return redisTemplate.opsForValue().get(key(email));
+    public String find(Long userId) {
+        return redisTemplate.opsForValue().get(key(userId));
     }
 
-    // 리프레시 토큰 삭제 (로그아웃/재발급 시 사용)
-    public void delete(String email) {
-        redisTemplate.delete(key(email));
+    public void delete(Long userId) {
+        redisTemplate.delete(key(userId));
     }
 
-
-    // 내부 키 생성 규칙
-    private String key(String email) {
-        return "refresh: " + email;
+    private String key(Long userId) {
+        return "refresh:" + userId;
     }
 }
