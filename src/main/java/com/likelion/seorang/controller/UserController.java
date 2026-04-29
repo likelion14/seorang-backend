@@ -5,6 +5,7 @@ import com.likelion.seorang.common.CustomUserDetails;
 import com.likelion.seorang.config.JwtProvider;
 import com.likelion.seorang.dto.LoginFormDto;
 import com.likelion.seorang.dto.LoginResDto;
+import com.likelion.seorang.dto.RecentPageFormDto;
 import com.likelion.seorang.dto.SignupFormDto;
 import com.likelion.seorang.entity.User;
 import com.likelion.seorang.service.UsersService;
@@ -50,6 +51,7 @@ public class UserController {
                 .body(new ApiSuccess(201, "성공적으로 처리되었습니다."));
     }
 
+    // 로그인
     @PostMapping("/login")
     public ResponseEntity<LoginResDto> login(
             @Valid @RequestBody LoginFormDto loginFormDto,
@@ -72,6 +74,7 @@ public class UserController {
                 .body(tokenResponse);
     }
 
+    // refresh 토큰으로 accessToken 재발급
     @PostMapping("/refresh")
     public ResponseEntity<LoginResDto> refresh(
             @CookieValue(name = "refresh_token", required = false) String refreshToken
@@ -99,6 +102,19 @@ public class UserController {
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity
+                .status(200)
+                .body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
+    }
+
+    // 최근 방문 페이지 저장
+    @PatchMapping("/recent")
+    public ResponseEntity<?> updateRecentPage(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @Valid @RequestBody RecentPageFormDto recentPageReqDto
+    ) {
+        usersService.updateRecentPage(me.getId(), recentPageReqDto.getUrl());
 
         return ResponseEntity
                 .status(200)
