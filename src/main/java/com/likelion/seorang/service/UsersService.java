@@ -97,7 +97,11 @@ public class UsersService implements UserDetailsService {
 
         refreshTokenRepository.save(user.getId(), refreshToken);
 
-        return new LoginResDto(accessToken, refreshToken);
+        return new LoginResDto(
+                accessToken,
+                refreshToken,
+                user.getRecentPage()
+        );
     }
 
     @Transactional
@@ -121,9 +125,19 @@ public class UsersService implements UserDetailsService {
             throw new ResponseStatusException(UNAUTHORIZED, "REFRESH_TOKEN_NOT_MATCHED");
         }
 
+        User user = usersRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        UNAUTHORIZED,
+                        "USER_NOT_FOUND"
+                ));
+
         String newAccessToken = jwtProvider.createAccessToken(String.valueOf(userId));
 
-        return new LoginResDto(newAccessToken, refreshToken);
+        return new LoginResDto(
+                newAccessToken,
+                refreshToken,
+                user.getRecentPage()
+        );
     }
 
     @Transactional
@@ -155,5 +169,16 @@ public class UsersService implements UserDetailsService {
                         new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
                 )
         );
+    }
+
+    @Transactional
+    public void updateRecentPage(Long userId, String url) {
+        User user = usersRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "USER_NOT_FOUND"
+                ));
+
+        user.updateRecentPage(url);
     }
 }
