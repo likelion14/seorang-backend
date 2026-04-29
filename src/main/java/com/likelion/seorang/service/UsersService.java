@@ -1,11 +1,16 @@
 package com.likelion.seorang.service;
 
 import com.likelion.seorang.common.CustomUserDetails;
+import com.likelion.seorang.config.JwtProvider;
+import com.likelion.seorang.dto.LoginFormDto;
+import com.likelion.seorang.dto.LoginResDto;
 import com.likelion.seorang.dto.SignupFormDto;
 import com.likelion.seorang.entity.Department;
 import com.likelion.seorang.entity.User;
 import com.likelion.seorang.repository.DepartmentRepository;
+import com.likelion.seorang.repository.RefreshTokenRepository;
 import com.likelion.seorang.repository.UsersRepository;
+import io.jsonwebtoken.JwtException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +34,8 @@ public class UsersService implements UserDetailsService {
 
     private final UsersRepository usersRepository;
     private final DepartmentRepository departmentRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final JwtProvider jwtProvider;
 
     // 회원가입
     @Transactional
@@ -69,6 +76,64 @@ public class UsersService implements UserDetailsService {
         usersRepository.save(user);
     }
 
+    @Transactional
+    public LoginResDto login(LoginFormDto loginFormDto) {
+
+        String normalizedPhone = loginFormDto.getPhone().replaceAll("[^0-9]", "");
+
+        User user = usersRepository.findByStudentIdAndPhone(
+                        loginFormDto.getStudentId(),
+                        normalizedPhone
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        UNAUTHORIZED,
+                        "INVALID_STUDENT_ID_OR_PHONE"
+                ));
+
+        String userId = String.valueOf(user.getId());
+
+        String accessToken = jwtProvider.createAccessToken(userId);
+        String refreshToken = jwtProvider.createRefreshToken(userId);
+
+        refreshTokenRepository.save(user.getId(), refreshToken);
+
+        return new LoginResDto(accessToken, refreshToken);
+    }
+
+    @Transactional
+    public LoginResDto refresh(String refreshToken) {
+
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new ResponseStatusException(UNAUTHORIZED, "REFRESH_TOKEN_REQUIRED");
+        }
+
+        Long userId;
+
+        try {
+            userId = Long.parseLong(jwtProvider.getSubject(refreshToken));
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new ResponseStatusException(UNAUTHORIZED, "INVALID_REFRESH_TOKEN");
+        }
+
+        String savedRefreshToken = refreshTokenRepository.find(userId);
+
+        if (savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)) {
+            throw new ResponseStatusException(UNAUTHORIZED, "REFRESH_TOKEN_NOT_MATCHED");
+        }
+
+        String newAccessToken = jwtProvider.createAccessToken(String.valueOf(userId));
+
+        return new LoginResDto(newAccessToken, refreshToken);
+    }
+
+    @Transactional
+    public void logout(Long userId) {
+        usersRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "USER_NOT_FOUND"));
+
+        refreshTokenRepository.delete(userId);
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
@@ -90,12 +155,5 @@ public class UsersService implements UserDetailsService {
                         new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
                 )
         );
-    }
-
-    // 로그아웃
-    @Transactional
-    public void logout(Long userId) {
-        User user = usersRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "USER_NOT_FOUND"));
     }
 }
