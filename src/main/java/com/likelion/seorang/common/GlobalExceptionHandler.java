@@ -88,6 +88,7 @@ public class GlobalExceptionHandler {
             case "DUPLICATE_STUDENT_ID" -> "이미 존재하는 학번입니다.";
             case "DUPLICATE_PHONE" -> "이미 사용 중인 전화번호입니다.";
             case "CONSTRAINT_VIOLATION" -> "데이터 무결성 위반";
+            case "INVALID_DAY" -> "운영일은 1, 2, 3 중 하나여야 합니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
 
