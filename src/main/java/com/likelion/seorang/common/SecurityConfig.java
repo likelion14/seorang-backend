@@ -78,6 +78,7 @@ public class SecurityConfig {
                         .requestMatchers("/upload").permitAll()
                         .requestMatchers("/admin/quiz/balance").permitAll()
                         .requestMatchers("/debug/claude/**").permitAll()
+                        .requestMatchers("/api/booths").permitAll()
 
                         // 어드민 보호
                         .requestMatchers("/api/admin/**").denyAll()
