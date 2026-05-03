@@ -188,7 +188,7 @@ public class UsersService implements UserDetailsService {
 
     private Role resolveRoleByStudentId(String studentId) {
 
-        if (studentId.equals("2022111388") || studentId.equals("2022111389")    ) {
+        if (studentId.equals("2022111388")) {
             return Role.STAFF;
         }
 
