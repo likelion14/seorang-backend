@@ -1,10 +1,8 @@
 package com.likelion.seorang.service;
 
-import com.likelion.seorang.common.GlobalExceptionHandler;
 import com.likelion.seorang.dto.LikeResponse;
-import com.likelion.seorang.dto.PostCreateDto;
+import com.likelion.seorang.dto.PostRequestDto;
 import com.likelion.seorang.dto.PostListItemDto;
-import com.likelion.seorang.dto.PostUpdateDto;
 import com.likelion.seorang.entity.Post;
 import com.likelion.seorang.entity.PostLike;
 import com.likelion.seorang.entity.User;
@@ -18,20 +16,14 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -85,7 +77,7 @@ public class PostService {
 
     // 게시글 작성하기
     @Transactional
-    public PostListItemDto createPost(Long userId, PostCreateDto postCreateDto){
+    public PostListItemDto createPost(Long userId, PostRequestDto postCreateDto){
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
         );
@@ -104,11 +96,11 @@ public class PostService {
 
     // 게시글 수정하기
     @Transactional
-    public PostListItemDto updatePost(Long userId, PostUpdateDto postUpdateDto){
+    public PostListItemDto updatePost(Long userId, Long postId, PostRequestDto postUpdateDto){
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
         );
-        Post post = postRepository.findById(postUpdateDto.getPostId()).orElseThrow(
+        Post post = postRepository.findById(postId).orElseThrow(
                 () -> new InvalidPostException("수정하려는 게시글이 없습니다.")
         );
 
@@ -152,6 +144,7 @@ public class PostService {
         } catch (Exception e) {
             log.error("S3 이미지 삭제 무시됨", e);
         }
+        postLikeRepository.deleteByPostId(postId);
         postRepository.delete(post);
     }
 
