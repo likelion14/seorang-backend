@@ -74,13 +74,20 @@ public class Post {
         this.tag3 = tag3;
     }
 
-    public void increaseLikeCount() {
+    public Integer increaseLikeCount() {
         this.likeCount++;
+        return this.likeCount;
     }
 
-    public void decreaseLikeCount() {
+    public Integer decreaseLikeCount() {
         if (this.likeCount > 0) {
             this.likeCount--;
+            return this.likeCount;
         }
+        return 0;
+    }
+
+    public void updateLikeCount(int likeCount) {
+        this.likeCount = likeCount;
     }
 }
