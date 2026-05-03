@@ -84,6 +84,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").denyAll()
 
                         // 나머진 인증 필요
+                        .requestMatchers(HttpMethod.POST, "/api/visits/**").authenticated()
+                        .requestMatchers("/api/booths/visited").authenticated()
                         .anyRequest().authenticated()
                 )
 
