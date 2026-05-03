@@ -74,9 +74,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/signup").permitAll()
                         .requestMatchers("/api/users/login").permitAll()
                         .requestMatchers("/api/users/refresh").permitAll()
-                        .requestMatchers("/admin/quiz/generate").permitAll()
-                        .requestMatchers("/upload").permitAll()
-                        .requestMatchers("/admin/quiz/balance").permitAll()
                         .requestMatchers("/debug/claude/**").permitAll()
                         .requestMatchers("/api/booths").permitAll()
 
