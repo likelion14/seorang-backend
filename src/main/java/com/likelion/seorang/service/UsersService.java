@@ -100,7 +100,8 @@ public class UsersService implements UserDetailsService {
         return new LoginResDto(
                 accessToken,
                 refreshToken,
-                user.getRecentPage()
+                user.getRecentPage(),
+                user.getRole().name()
         );
     }
 
@@ -136,7 +137,8 @@ public class UsersService implements UserDetailsService {
         return new LoginResDto(
                 newAccessToken,
                 refreshToken,
-                user.getRecentPage()
+                user.getRecentPage(),
+                user.getRole().name()
         );
     }
 
