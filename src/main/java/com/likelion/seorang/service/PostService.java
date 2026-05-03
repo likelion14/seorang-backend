@@ -52,7 +52,7 @@ public class PostService {
     @Cacheable(value = "posts", key = "'all'")
     @Transactional(readOnly = true)
     public List<PostListItemDto> findAll() {
-        return postRepository.findAll().stream()
+        return postRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(PostListItemDto::from)
                 .toList();
     }
