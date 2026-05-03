@@ -1,10 +1,12 @@
 package com.likelion.seorang.common;
 
+import com.likelion.seorang.exception.InvalidLikeException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -168,4 +170,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleRuntimeException(RuntimeException ex) {
         return ApiError.of(400, "RUNTIME_ERROR", ex.getMessage());
     }
+
+    // 좋아요 에러
+    @ExceptionHandler(InvalidLikeException.class)
+    public ResponseEntity<String> handleInvalidLike(InvalidLikeException e) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+    }
+
 }
