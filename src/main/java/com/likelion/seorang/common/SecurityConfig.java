@@ -86,6 +86,7 @@ public class SecurityConfig {
                         // 나머진 인증 필요
                         .requestMatchers(HttpMethod.POST, "/api/visits/**").authenticated()
                         .requestMatchers("/api/booths/visited").authenticated()
+                        .requestMatchers("/api/users/me").authenticated()
                         .anyRequest().authenticated()
                 )
 

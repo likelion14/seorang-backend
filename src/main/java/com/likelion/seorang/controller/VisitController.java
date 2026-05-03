@@ -1,5 +1,6 @@
 package com.likelion.seorang.controller;
 
+import com.likelion.seorang.common.ApiSuccess;
 import com.likelion.seorang.common.CustomUserDetails;
 import com.likelion.seorang.service.VisitService;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +19,11 @@ public class VisitController {
     private final VisitService visitService;
 
     @PostMapping("/{boothId}")
-    public ResponseEntity<Void> checkVisit(
+    public ResponseEntity<?> checkVisit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Integer boothId) {
         visitService.checkVisit(userDetails.getId(), boothId);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(200).body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
     }
 }
