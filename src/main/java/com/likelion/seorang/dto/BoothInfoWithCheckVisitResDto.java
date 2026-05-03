@@ -7,14 +7,15 @@ import java.io.Serializable;
 
 @Getter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // 추가
-@AllArgsConstructor // @Builder + @NoArgsConstructor 함께 쓸 때 필요
-public class BoothInfoResDto implements Serializable {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+public class BoothInfoWithCheckVisitResDto implements Serializable {
     private Integer id;
     private String name;
     private Boolean dayOpen; // 요청한 날짜의 운영 여부만 내려줌
+    private Boolean visited; // 방문 체크 여부
 
-    public static BoothInfoResDto from(Booth booth, Integer day) {
+    public static BoothInfoWithCheckVisitResDto from(Booth booth, Integer day, boolean visited) {
         Boolean dayOpen = switch (day) {
             case 1 -> booth.getDay1Open();
             case 2 -> booth.getDay2Open();
@@ -22,10 +23,11 @@ public class BoothInfoResDto implements Serializable {
             default -> false;
         };
 
-        return BoothInfoResDto.builder()
+        return BoothInfoWithCheckVisitResDto.builder()
                 .id(booth.getId())
                 .name(booth.getName())
                 .dayOpen(dayOpen)
+                .visited(visited)
                 .build();
     }
 }

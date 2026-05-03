@@ -35,4 +35,11 @@ public class Visit {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    public static Visit of(User user, Booth booth) {
+        return Visit.builder()
+                .user(user)
+                .booth(booth)
+                .build();
+    }
 }
