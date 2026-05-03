@@ -86,4 +86,8 @@ public class Post {
         }
         return 0;
     }
+
+    public void updateLikeCount(int likeCount) {
+        this.likeCount = likeCount;
+    }
 }

@@ -46,6 +46,9 @@ public class RedisConfig {
         // 피드 좋아요 - 2분
         cacheConfigs.put("likes", defaultConfig().entryTtl(Duration.ofMinutes(2)));
 
+        // 게시글 데이터 - 30분
+        cacheConfigs.put("posts", defaultConfig().entryTtl(Duration.ofMinutes(30)));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig().entryTtl(Duration.ofMinutes(30))) // 기본 TTL
                 .withInitialCacheConfigurations(cacheConfigs)

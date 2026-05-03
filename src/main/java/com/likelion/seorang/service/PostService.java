@@ -12,10 +12,16 @@ import com.likelion.seorang.exception.InvalidPostException;
 import com.likelion.seorang.repository.PostLikeRepository;
 import com.likelion.seorang.repository.PostRepository;
 import com.likelion.seorang.repository.UsersRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,12 +42,15 @@ public class PostService {
     private final PostRepository postRepository;
     private final UsersRepository usersRepository;
     private final PostLikeRepository postLikeRepository;
-    private final S3Client s3Client; // 🔥 주입
+    private final S3Client s3Client;
+    private final StringRedisTemplate redisTemplate;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
     // 피드 전체 조회
+    @Cacheable(value = "posts", key = "'all'")
+    @Transactional(readOnly = true)
     public List<PostListItemDto> findAll() {
         return postRepository.findAll().stream()
                 .map(PostListItemDto::from)
@@ -50,6 +59,7 @@ public class PostService {
 
     // 게시글 좋아요
     @Transactional
+    @CacheEvict(value = "posts", key = "'all'")
     public LikeResponse likePost(Long userId, Long postId) {
         Post likedPost = postRepository.findById(postId).orElseThrow(
                 () -> new InvalidLikeException("좋아요를 누를 게시글이 없습니다."));
@@ -58,10 +68,20 @@ public class PostService {
                 () -> new InvalidLikeException("유저가 없습니다.")
         );
 
+        // 좋아요 개수 캐싱
+        String redisKey = "post:" + postId + ":likeCount";
+        redisTemplate.opsForValue().setIfAbsent(
+                redisKey,
+                String.valueOf(likedPost.getLikeCount())
+        );
+
         // 이미 좋아요 누른 게시글
         if (postLikeRepository.existsByPostIdAndUserId(postId, userId)) {
             postLikeRepository.deleteByPostIdAndUserId(postId, userId);
-            return LikeResponse.of(false, likedPost.decreaseLikeCount());
+            redisTemplate.opsForValue().decrement(redisKey); // 캐시값 조정
+            String value = redisTemplate.opsForValue().get(redisKey);
+            int likeCount = (value == null) ? 0 : Integer.parseInt(value);
+            return LikeResponse.of(false, likeCount);
         }
 
         // 새로운 좋아요 생성
@@ -72,11 +92,17 @@ public class PostService {
                 .build();
         postLikeRepository.save(postLike);
 
-        return LikeResponse.of(true, likedPost.increaseLikeCount());
+        redisTemplate.opsForValue().increment(redisKey);
+
+        String value = redisTemplate.opsForValue().get(redisKey);
+        int likeCount = (value == null) ? 1 : Integer.parseInt(value);
+
+        return LikeResponse.of(true, likeCount);
     }
 
     // 게시글 작성하기
     @Transactional
+    @CacheEvict(value = "posts", key = "'all'")
     public PostListItemDto createPost(Long userId, PostRequestDto postCreateDto){
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
@@ -96,6 +122,7 @@ public class PostService {
 
     // 게시글 수정하기
     @Transactional
+    @CacheEvict(value = "posts", key = "'all'")
     public PostListItemDto updatePost(Long userId, Long postId, PostRequestDto postUpdateDto){
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
@@ -128,6 +155,7 @@ public class PostService {
 
     // 게시글 삭제하기
     @Transactional
+    @CacheEvict(value = "posts", key = "'all'")
     public void deletePost(Long userId, Long postId) {
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
@@ -145,6 +173,7 @@ public class PostService {
             log.error("S3 이미지 삭제 무시됨", e);
         }
         postLikeRepository.deleteByPostId(postId);
+        redisTemplate.delete("post:" + postId + ":likeCount");
         postRepository.delete(post);
     }
 
@@ -195,5 +224,28 @@ public class PostService {
 
     private String extractKeyFromUrl(String fileUrl) {
         return fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+    }
+
+    @Scheduled(fixedRate = 300000) // 5분
+    @Transactional
+    public void syncLikeCount() {
+        ScanOptions options = ScanOptions.scanOptions().match("post:*:likeCount").count(100).build();
+
+        try (Cursor<String> cursor = redisTemplate.scan(options)) {
+            while (cursor.hasNext()) {
+                String key = cursor.next();
+
+                String postIdStr = key.split(":")[1];
+                Long postId = Long.parseLong(postIdStr);
+
+                String value = redisTemplate.opsForValue().get(key);
+                if (value == null) continue;
+
+                Post post = postRepository.findById(postId).orElse(null);
+                if (post == null) continue;
+
+                post.updateLikeCount(Integer.parseInt(value));
+            }
+        }
     }
 }
