@@ -74,15 +74,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/signup").permitAll()
                         .requestMatchers("/api/users/login").permitAll()
                         .requestMatchers("/api/users/refresh").permitAll()
-                        .requestMatchers("/admin/quiz/generate").permitAll()
-                        .requestMatchers("/upload").permitAll()
-                        .requestMatchers("/admin/quiz/balance").permitAll()
                         .requestMatchers("/debug/claude/**").permitAll()
+                        .requestMatchers("/api/booths").permitAll()
 
                         // 어드민 보호
                         .requestMatchers("/api/admin/**").denyAll()
 
                         // 나머진 인증 필요
+                        .requestMatchers(HttpMethod.POST, "/api/visits/**").authenticated()
+                        .requestMatchers("/api/booths/visited").authenticated()
+                        .requestMatchers("/api/users/me").authenticated()
                         .anyRequest().authenticated()
                 )
 

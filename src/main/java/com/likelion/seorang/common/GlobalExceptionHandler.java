@@ -90,6 +90,9 @@ public class GlobalExceptionHandler {
             case "DUPLICATE_STUDENT_ID" -> "이미 존재하는 학번입니다.";
             case "DUPLICATE_PHONE" -> "이미 사용 중인 전화번호입니다.";
             case "CONSTRAINT_VIOLATION" -> "데이터 무결성 위반";
+            case "INVALID_DAY" -> "운영일은 1, 2, 3 중 하나여야 합니다.";
+            case "BOOTH_NOT_FOUND" -> "부스 정보를 찾을 수 없습니다.";
+            case "ALREADY_VISITED" -> "이미 방문 체크한 부스입니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
 

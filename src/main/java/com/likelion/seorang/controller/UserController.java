@@ -120,4 +120,11 @@ public class UserController {
                 .status(200)
                 .body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
     }
+
+    // 로그인 여부 판단
+    @GetMapping("/me")
+    public ResponseEntity<?> check(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.status(200).body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
+    }
 }
