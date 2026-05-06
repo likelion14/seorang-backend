@@ -7,6 +7,7 @@ import com.likelion.seorang.dto.LoginResDto;
 import com.likelion.seorang.dto.SignupFormDto;
 import com.likelion.seorang.entity.Department;
 import com.likelion.seorang.entity.User;
+import com.likelion.seorang.enums.Role;
 import com.likelion.seorang.repository.DepartmentRepository;
 import com.likelion.seorang.repository.RefreshTokenRepository;
 import com.likelion.seorang.repository.UsersRepository;
@@ -71,6 +72,7 @@ public class UsersService implements UserDetailsService {
                 .name(signupFormDto.getName())
                 .phone(normalizedPhone)
                 .department(department)
+                .role(resolveRoleByStudentId(signupFormDto.getStudentId())) // 학번으로 권한 부여
                 .build();
 
         usersRepository.save(user);
@@ -182,5 +184,14 @@ public class UsersService implements UserDetailsService {
                 ));
 
         user.updateRecentPage(url);
+    }
+
+    private Role resolveRoleByStudentId(String studentId) {
+
+        if (studentId.equals("2022111388")) {
+            return Role.STAFF;
+        }
+
+        return Role.STUDENT;
     }
 }
