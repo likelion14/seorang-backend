@@ -1,5 +1,6 @@
 package com.likelion.seorang.controller;
 
+import com.likelion.seorang.common.ApiSuccess;
 import com.likelion.seorang.common.CustomUserDetails;
 import com.likelion.seorang.dto.LikeResponse;
 import com.likelion.seorang.dto.PostRequestDto;
@@ -45,7 +46,7 @@ public class PostController {
             @AuthenticationPrincipal CustomUserDetails user, @PathVariable Long postId
     ){
         postService.deletePost(user.getId(), postId);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.status(200). body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
     }
 
     @PatchMapping("/{postId}/like")

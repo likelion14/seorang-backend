@@ -167,7 +167,7 @@ public class PostService {
                 () -> new InvalidPostException("유저가 없습니다.")
         );
         Post post = postRepository.findById(postId).orElseThrow(
-                () -> new InvalidPostException("수정하려는 게시글이 없습니다.")
+                () -> new InvalidPostException("삭제하려는 게시글이 없습니다.")
         );
 
         if (!user.getId().equals(post.getUser().getId()) && !user.getRole().equals(Role.STAFF)){
