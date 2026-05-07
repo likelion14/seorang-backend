@@ -107,6 +107,9 @@ public class PostService {
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
         );
+        if(postCreateDto.getTag1() == null){
+            throw new InvalidPostException("태그는 최소 1개 이상 작성해야 합니다.");
+        }
         String imgUrl = upload(postCreateDto.getImgUrl());
         Post post = Post.builder()
                 .user(user)
@@ -133,6 +136,9 @@ public class PostService {
 
         if (!user.getId().equals(post.getUser().getId())){
             throw new InvalidPostException("해당 게시글을 작성한 유저만 수정할 수 있습니다.");
+        }
+        if(postUpdateDto.getTag1() == null){
+            throw new InvalidPostException("태그는 최소 1개 이상 작성해야 합니다.");
         }
 
         // 새 이미지 들어온 경우
