@@ -1,33 +1,31 @@
-version: "3.8"
-
 services:
-  mysql:
-    image: mysql:8.4
-    container_name: seorang-mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: seorang
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      TZ: Asia/Seoul
-    ports:
-      - "3307:3306"
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-    volumes:
-      - mysql-data:/var/lib/mysql
+
   redis:
     image: redis:7.2
     container_name: seorang-redis
     ports:
-      - "6380:6379"
-    command: >
-      redis-server
-      --appendonly yes
-      --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
+      - "6379:6379"
+    networks:
+      - seorang-network
 
-volumes:
-  mysql-data:
+  app:
+    build: .
+    container_name: seorang-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: ${DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      SPRING_DATA_REDIS_HOST: redis
+    depends_on:
+      - redis
+    networks:
+      - seorang-network
+
+networks:
+  seorang-network:
+    driver: bridge
