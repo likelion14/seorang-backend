@@ -2,6 +2,7 @@ package com.likelion.seorang.service;
 
 import com.likelion.seorang.dto.BoothInfoResDto;
 import com.likelion.seorang.dto.BoothInfoWithCheckVisitResDto;
+import com.likelion.seorang.entity.Booth;
 import com.likelion.seorang.repository.BoothRepository;
 import com.likelion.seorang.repository.VisitRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -33,17 +36,25 @@ public class BoothService {
     }
 
     public List<BoothInfoWithCheckVisitResDto> getBoothsWithCheckVisitByDay(Integer day, Long userId) {
-        if ( day < 1 || day > 3 ) {
+        if (day < 1 || day > 3) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_DAY");
         }
 
-        return boothRepository.findAllBy(day).stream()
+        // 해당 일차의 부스 목록 조회
+        List<Booth> booths = boothRepository.findAllBy(day);
+
+        // 현재 사용자가 방문한 부스 id 목록을 한 번에 조회
+        Set<Integer> visitedBoothIds = new HashSet<>(
+                visitRepository.findVisitedBoothIdsByUserId(userId)
+        );
+
+        // 각 부스가 방문된 부스인지 HashSet 메모리 안에서 판단
+        return booths.stream()
                 .map(booth -> BoothInfoWithCheckVisitResDto.from(
                         booth,
                         day,
-                        visitRepository.existsVisitByUserIdAndBoothId(userId, booth.getId())
+                        visitedBoothIds.contains(booth.getId())
                 ))
                 .toList();
     }
-
 }
