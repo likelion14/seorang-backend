@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim AS build
+FROM eclipse-temurin:17-jdk-focal AS build
 WORKDIR /app
 
 COPY . .
