@@ -5,7 +5,7 @@ COPY . .
 RUN chmod +x ./gradlew
 RUN ./gradlew clean build -x test
 
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-focal
 WORKDIR /app
 
 COPY --from=build /app/build/libs/*-SNAPSHOT.jar app.jar
