@@ -41,7 +41,7 @@ public class RedisConfig {
         Map<String, RedisCacheConfiguration> cacheConfigs = new HashMap<>();
 
         // 부스 데이터 - 3시간
-        cacheConfigs.put("booth", defaultConfig().entryTtl(Duration.ofHours(3)));
+        cacheConfigs.put("booths", defaultConfig().entryTtl(Duration.ofHours(3)));
 
         // 피드 좋아요 - 2분
         cacheConfigs.put("likes", defaultConfig().entryTtl(Duration.ofMinutes(2)));

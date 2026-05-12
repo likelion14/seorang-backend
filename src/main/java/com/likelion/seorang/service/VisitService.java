@@ -22,7 +22,7 @@ public class VisitService {
 
     public void checkVisit(Long userId, Integer boothId) {
         // 중복 방문 체크
-        if (visitRepository.existsVisitByUserIdAndBoothId(userId, boothId)) {
+        if (visitRepository.existsVisitByUser_IdAndBooth_Id(userId, boothId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "ALREADY_VISITED");
         }
 
