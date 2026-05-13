@@ -15,6 +15,7 @@ public class PostListItemDto {
     private String tag2;
     private String tag3;
     private Integer likeCount;
+    private Long authorId;
 
     public static PostListItemDto from(Post post) {
         return PostListItemDto.builder()
@@ -24,6 +25,7 @@ public class PostListItemDto {
                 .tag2(post.getTag2())
                 .tag3(post.getTag3())
                 .likeCount(post.getLikeCount())
+                .authorId(post.getUser().getId())
                 .build();
     }
 }
