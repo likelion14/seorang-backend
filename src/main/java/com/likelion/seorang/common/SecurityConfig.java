@@ -76,6 +76,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/refresh").permitAll()
                         .requestMatchers("/debug/claude/**").permitAll()
                         .requestMatchers("/api/booths").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
 
                         // 어드민 보호
                         .requestMatchers("/api/admin/**").denyAll()
