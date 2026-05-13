@@ -49,6 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
+        if ("GET".equalsIgnoreCase(request.getMethod()) && path.equals("/api/posts")) return true; // 인증샷 피드 전체보기 허용
         // 필요하면 패턴 매칭 허용: /api/users/** 같은
         for (String p : whitelist) {
             if (pathMatcher.match(p, path)) return true;
