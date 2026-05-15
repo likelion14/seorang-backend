@@ -82,6 +82,7 @@ public class PostService {
                     .authorId(post.getAuthorId())
                     .likeCount(likeCount)
                     .isLiked(userId != null && finalLikedSet.contains(post.getPostId()))
+                    .isOwner(userId != null && post.getAuthorId().equals(userId))
                     .build());
         }
 
