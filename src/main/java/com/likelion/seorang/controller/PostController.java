@@ -3,6 +3,7 @@ package com.likelion.seorang.controller;
 import com.likelion.seorang.common.ApiSuccess;
 import com.likelion.seorang.common.CustomUserDetails;
 import com.likelion.seorang.dto.LikeResponse;
+import com.likelion.seorang.dto.PostAllResponse;
 import com.likelion.seorang.dto.PostRequestDto;
 import com.likelion.seorang.dto.PostListItemDto;
 import com.likelion.seorang.service.PostService;
@@ -21,8 +22,9 @@ public class PostController {
     private final PostService postService;
 
     @GetMapping("")
-    public ResponseEntity<List<PostListItemDto>> findAll() {
-        List<PostListItemDto> posts = postService.findAll();
+    public ResponseEntity<List<PostAllResponse>> findAll(@AuthenticationPrincipal CustomUserDetails user) {
+        Long userId = (user != null) ? user.getId() : null;
+        List<PostAllResponse> posts = postService.findAll(userId);
         return new ResponseEntity<>(posts, HttpStatus.OK);
     }
 
