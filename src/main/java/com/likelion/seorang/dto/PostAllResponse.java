@@ -20,8 +20,9 @@ public class PostAllResponse {
     private Long authorId;
     @JsonProperty("isLiked")
     private Boolean isLiked;
+    private Boolean isOwner;
 
-    public static PostAllResponse from(Post post, Boolean isLiked) {
+    public static PostAllResponse from(Post post, Boolean isLiked, Boolean isOwner) {
         return PostAllResponse.builder()
                 .postId(post.getId())
                 .imgUrl(post.getImgUrl())
@@ -31,6 +32,7 @@ public class PostAllResponse {
                 .likeCount(post.getLikeCount())
                 .authorId(post.getUser().getId())
                 .isLiked(isLiked)
+                .isOwner(isOwner)
                 .build();
     }
 }
