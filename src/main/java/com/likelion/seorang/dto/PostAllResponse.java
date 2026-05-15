@@ -1,6 +1,7 @@
 package com.likelion.seorang.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.likelion.seorang.entity.Post;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,6 +18,7 @@ public class PostAllResponse {
     private String tag3;
     private Integer likeCount;
     private Long authorId;
+    @JsonProperty("isLiked")
     private Boolean isLiked;
 
     public static PostAllResponse from(Post post, Boolean isLiked) {
