@@ -106,13 +106,13 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // 허용 주소 설정
-        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "http://3.25.125.245:*", "https://likelion14th-swu-seorang.vercel.app"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "http://54.180.106.211:8080*", "https://likelion14th-swu-seorang.vercel.app"));
 
         // 허용 메서드 설정
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         // 헤더 목록 설정
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowedHeaders(List.of("*"));
 
         // 브라우저 자격 증명 허용
         config.setAllowCredentials(true);
