@@ -24,7 +24,7 @@ public class BoothService {
     private final BoothRepository boothRepository;
     private final VisitRepository visitRepository;
 
-    @Cacheable(value = "booths", key = "#day")
+    // @Cacheable(value = "booths", key = "#day")
     public List<BoothInfoResDto> getBoothsByDay(Integer day) {
         if ( day < 1 || day > 3 ) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_DAY");
