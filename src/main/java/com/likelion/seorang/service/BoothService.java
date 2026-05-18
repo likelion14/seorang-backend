@@ -26,22 +26,15 @@ public class BoothService {
 
     // @Cacheable(value = "booths", key = "#day")
     public List<BoothInfoResDto> getBoothsByDay(Integer day) {
-        if ( day < 1 || day > 3 ) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_DAY");
-        }
-
-        return boothRepository.findAllBy(day).stream()
+        return findBoothsByDay(day).stream()
                 .map(booth -> BoothInfoResDto.from(booth, day))
                 .toList();
     }
 
     public List<BoothInfoWithCheckVisitResDto> getBoothsWithCheckVisitByDay(Integer day, Long userId) {
-        if (day < 1 || day > 3) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_DAY");
-        }
 
         // 해당 일차의 부스 목록 조회
-        List<Booth> booths = boothRepository.findAllBy(day);
+        List<Booth> booths = findBoothsByDay(day);
 
         // 현재 사용자가 방문한 부스 id 목록을 한 번에 조회
         Set<Integer> visitedBoothIds = new HashSet<>(
@@ -56,5 +49,14 @@ public class BoothService {
                         visitedBoothIds.contains(booth.getId())
                 ))
                 .toList();
+    }
+
+    private List<Booth> findBoothsByDay(Integer day) {
+        return switch (day) {
+            case 1 -> boothRepository.findAllByDay1OpenTrue();
+            case 2 -> boothRepository.findAllByDay2OpenTrue();
+            case 3 -> boothRepository.findAllByDay3OpenTrue();
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_DAY");
+        };
     }
 }
