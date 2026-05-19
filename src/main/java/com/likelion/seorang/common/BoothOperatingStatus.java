@@ -12,7 +12,7 @@ import java.time.ZoneId;
 public final class BoothOperatingStatus {
 
     private static final LocalTime OPEN_TIME = LocalTime.of(11, 0); // 운영 시작
-    private static final LocalTime CLOSE_TIME = LocalTime.of(17, 0); // 운영 종료
+    private static final LocalTime CLOSE_TIME = LocalTime.of(16, 30); // 운영 종료
     private static final ZoneId KOREA_ZONE = ZoneId.of("Asia/Seoul"); // 한국 시간 기준
 
     // 운영 날짜
