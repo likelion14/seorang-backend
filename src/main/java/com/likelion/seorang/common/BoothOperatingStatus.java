@@ -30,7 +30,7 @@ public final class BoothOperatingStatus {
         if (!Boolean.TRUE.equals(dayOpen))
             return null;
 
-        return "11:00-17:00";
+        return "11:00-16:30";
     }
 
     // 운영 상태 반환
