@@ -51,10 +51,14 @@ public class PostService {
         // 좋아요한 게시글 목록 = likedSet
         Set<Long> likedSet = new HashSet<>();
         // 로그인한 경우만 좋아요 조회
+        boolean isStaff = false; // 운영진 검사용 변수
         if (userId != null) {
             likedSet = new HashSet<>(
                     postLikeRepository.findLikedPostIds(userId)
             );
+            isStaff = usersRepository.findById(userId)
+                    .map(user -> user.getRole() == Role.STAFF)
+                    .orElse(false);
         }
         Set<Long> finalLikedSet = likedSet;
 
@@ -82,7 +86,7 @@ public class PostService {
                     .authorId(post.getAuthorId())
                     .likeCount(likeCount)
                     .isLiked(userId != null && finalLikedSet.contains(post.getPostId()))
-                    .isOwner(userId != null && post.getAuthorId().equals(userId))
+                    .isOwner(userId != null && (post.getAuthorId().equals(userId) || isStaff))
                     .build());
         }
 
