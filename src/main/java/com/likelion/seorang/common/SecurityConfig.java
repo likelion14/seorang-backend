@@ -45,7 +45,7 @@ public class SecurityConfig {
         http
                 // REST API: CSRF 비활성화
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> {}) // 기본값. 필요 시 CorsConfigurationSource 빈 정의해서 커스터마이즈
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // 기본값. 필요 시 CorsConfigurationSource 빈 정의해서 커스터마이즈
 
                 // 세션 미사용
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
