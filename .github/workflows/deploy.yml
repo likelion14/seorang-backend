@@ -20,4 +20,6 @@ jobs:
           script: |
             cd ~/app
             git pull origin main
-            SENTRY_DSN="${{ secrets.SENTRY_DSN }}" docker compose up -d --build
+
+            docker compose down || true
+            docker compose up -d --build
