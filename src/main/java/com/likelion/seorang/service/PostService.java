@@ -45,16 +45,102 @@ public class PostService {
     // 피드 전체 조회
     @Cacheable(value = "posts", key = "'all'")
     @Transactional(readOnly = true)
-    public List<PostListItemDto> findAll() {
-        return postRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(post -> {
-                    long realLikeCount = postLikeRepository.countByPostId(post.getId());
-                    post.updateLikeCount((int) realLikeCount);
-                    return PostListItemDto.from(post);
-                })
+    public List<PostAllResponse> findAll(Long userId) {
+
+        // 캐시된 게시글 조회
+        List<PostCacheDto> cachedPosts = postCacheService.getCachedPosts();
+        // 좋아요한 게시글 목록 = likedSet
+        Set<Long> likedSet = new HashSet<>();
+        // 로그인한 경우만 좋아요 조회
+        boolean isStaff = false; // 운영진 검사용 변수
+        if (userId != null) {
+            likedSet = new HashSet<>(
+                    postLikeRepository.findLikedPostIds(userId)
+            );
+            isStaff = usersRepository.findById(userId)
+                    .map(user -> user.getRole() == Role.STAFF)
+                    .orElse(false);
+        }
+        Set<Long> finalLikedSet = likedSet;
+
+        List<String> keys = cachedPosts.stream()
+                .map(p -> "post:" + p.getPostId() + ":likeCount")
                 .toList();
+
+        List<String> redisValues = redisTemplate.opsForValue().multiGet(keys);
+
+        List<PostAllResponse> result = new ArrayList<>();
+        for (int i = 0; i < cachedPosts.size(); i++) {
+            PostCacheDto post = cachedPosts.get(i);
+            String value = redisValues != null ? redisValues.get(i) : null;
+
+            int likeCount = (value != null)
+                    ? Integer.parseInt(value)
+                    : postRepository.findById(post.getPostId())
+                            .map(Post::getLikeCount)
+                            .orElse(post.getLikeCount() != null ? post.getLikeCount() : 0);
+
+            result.add(PostAllResponse.builder()
+                    .postId(post.getPostId())
+                    .imgUrl(post.getImgUrl())
+                    .tag1(post.getTag1())
+                    .tag2(post.getTag2())
+                    .tag3(post.getTag3())
+                    .authorId(post.getAuthorId())
+                    .likeCount(likeCount)
+                    .isLiked(userId != null && finalLikedSet.contains(post.getPostId()))
+                    .isOwner(userId != null && (post.getAuthorId().equals(userId) || isStaff))
+                    .build());
+        }
+
+        return result;
     }
 
+    // 게시글 좋아요
+    @Transactional
+    public LikeResponse likePost(Long userId, Long postId) {
+        Post likedPost = postRepository.findById(postId).orElseThrow(
+                () -> new InvalidLikeException("좋아요를 누를 게시글이 없습니다."));
+
+        User user = usersRepository.findById(userId).orElseThrow(
+                () -> new InvalidLikeException("유저가 없습니다.")
+        );
+
+        // 좋아요 개수 캐싱
+        String redisKey = "post:" + postId + ":likeCount";
+        redisTemplate.opsForValue().setIfAbsent(
+                redisKey,
+                String.valueOf(likedPost.getLikeCount())
+        );
+
+        // 이미 좋아요 누른 게시글
+        if (postLikeRepository.existsByPost_IdAndUser_Id(postId, userId)) {
+            postLikeRepository.deleteByPost_IdAndUser_Id(postId, userId);
+            // 좋아요
+            redisTemplate.opsForSet().add("like:dirty", postId.toString());
+            Long likeCount = redisTemplate.opsForValue().decrement(redisKey); // 캐시값 조정
+
+            if (likeCount < 0) {
+                redisTemplate.opsForValue().set(redisKey, "0");
+                likeCount = 0L;
+            }
+
+            return LikeResponse.of(false, likeCount.intValue());
+        }
+
+        // 새로운 좋아요 생성
+        PostLike postLike = PostLike.builder()
+                .post(likedPost)
+                .user(user)
+                .createdAt(LocalDateTime.now())
+                .build();
+        postLikeRepository.save(postLike);
+
+        redisTemplate.opsForSet().add("like:dirty", postId.toString());
+        Long likeCount = redisTemplate.opsForValue().increment(redisKey);
+        return LikeResponse.of(true, likeCount.intValue());
+    }
+    
     // 게시글 작성하기
     @Transactional
     public PostListItemDto createPost(Long userId, PostRequestDto postCreateDto){
