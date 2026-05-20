@@ -1,8 +1,6 @@
 package com.likelion.seorang.service;
 
-import com.likelion.seorang.dto.LikeResponse;
-import com.likelion.seorang.dto.PostRequestDto;
-import com.likelion.seorang.dto.PostListItemDto;
+import com.likelion.seorang.dto.*;
 import com.likelion.seorang.entity.Post;
 import com.likelion.seorang.entity.PostLike;
 import com.likelion.seorang.entity.User;
@@ -12,14 +10,10 @@ import com.likelion.seorang.exception.InvalidPostException;
 import com.likelion.seorang.repository.PostLikeRepository;
 import com.likelion.seorang.repository.PostRepository;
 import com.likelion.seorang.repository.UsersRepository;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -27,8 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -44,6 +37,7 @@ public class PostService {
     private final PostLikeRepository postLikeRepository;
     private final S3Client s3Client;
     private final StringRedisTemplate redisTemplate;
+    private final PostCacheService postCacheService;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -61,52 +55,8 @@ public class PostService {
                 .toList();
     }
 
-    // 게시글 좋아요
-    @Transactional
-    @CacheEvict(value = "posts", key = "'all'")
-    public LikeResponse likePost(Long userId, Long postId) {
-        Post likedPost = postRepository.findById(postId).orElseThrow(
-                () -> new InvalidLikeException("좋아요를 누를 게시글이 없습니다."));
-
-        User user = usersRepository.findById(userId).orElseThrow(
-                () -> new InvalidLikeException("유저가 없습니다.")
-        );
-
-        // 좋아요 개수 캐싱
-        String redisKey = "post:" + postId + ":likeCount";
-        redisTemplate.opsForValue().setIfAbsent(
-                redisKey,
-                String.valueOf(likedPost.getLikeCount())
-        );
-
-        // 이미 좋아요 누른 게시글
-        if (postLikeRepository.existsByPostIdAndUserId(postId, userId)) {
-            postLikeRepository.deleteByPostIdAndUserId(postId, userId);
-            redisTemplate.opsForValue().decrement(redisKey); // 캐시값 조정
-            String value = redisTemplate.opsForValue().get(redisKey);
-            int likeCount = (value == null) ? 0 : Integer.parseInt(value);
-            return LikeResponse.of(false, likeCount);
-        }
-
-        // 새로운 좋아요 생성
-        PostLike postLike = PostLike.builder()
-                .post(likedPost)
-                .user(user)
-                .createdAt(LocalDateTime.now())
-                .build();
-        postLikeRepository.save(postLike);
-
-        redisTemplate.opsForValue().increment(redisKey);
-
-        String value = redisTemplate.opsForValue().get(redisKey);
-        int likeCount = (value == null) ? 1 : Integer.parseInt(value);
-
-        return LikeResponse.of(true, likeCount);
-    }
-
     // 게시글 작성하기
     @Transactional
-    @CacheEvict(value = "posts", key = "'all'")
     public PostListItemDto createPost(Long userId, PostRequestDto postCreateDto){
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
@@ -124,12 +74,12 @@ public class PostService {
                 .createdAt(LocalDateTime.now())
                 .build();
         postRepository.save(post);
+        postCacheService.evictPostsCache();
         return PostListItemDto.from(post);
     }
 
     // 게시글 수정하기
     @Transactional
-    @CacheEvict(value = "posts", key = "'all'")
     public PostListItemDto updatePost(Long userId, Long postId, PostRequestDto postUpdateDto){
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
@@ -160,12 +110,12 @@ public class PostService {
         post.updatePost(imgUrl, postUpdateDto.getTag1(), postUpdateDto.getTag2(), postUpdateDto.getTag3());
         postRepository.save(post);
 
+        postCacheService.evictPostsCache();
         return PostListItemDto.from(post);
     }
 
     // 게시글 삭제하기
     @Transactional
-    @CacheEvict(value = "posts", key = "'all'")
     public void deletePost(Long userId, Long postId) {
         User user = usersRepository.findById(userId).orElseThrow(
                 () -> new InvalidPostException("유저가 없습니다.")
@@ -182,9 +132,10 @@ public class PostService {
         } catch (Exception e) {
             log.error("S3 이미지 삭제 무시됨", e);
         }
-        postLikeRepository.deleteByPostId(postId);
+        postLikeRepository.deleteByPost_Id(postId);
         redisTemplate.delete("post:" + postId + ":likeCount");
         postRepository.delete(post);
+        postCacheService.evictPostsCache();
     }
 
 
@@ -239,22 +190,25 @@ public class PostService {
     @Scheduled(fixedRate = 300000) // 5분
     @Transactional
     public void syncLikeCount() {
-        ScanOptions options = ScanOptions.scanOptions().match("post:*:likeCount").count(100).build();
+        Set<String> dirtyKeys = redisTemplate.opsForSet().members("like:dirty");
+        if (dirtyKeys == null || dirtyKeys.isEmpty()) return;
 
-        try (Cursor<String> cursor = redisTemplate.scan(options)) {
-            while (cursor.hasNext()) {
-                String key = cursor.next();
-
-                String postIdStr = key.split(":")[1];
+        for (String postIdStr : dirtyKeys) {
+            try{
                 Long postId = Long.parseLong(postIdStr);
 
-                String value = redisTemplate.opsForValue().get(key);
-                if (value == null) continue;
+                //DB count를 source of truth로 사용
+                int actualCount = postLikeRepository.countByPost_Id(postId);
 
-                Post post = postRepository.findById(postId).orElse(null);
-                if (post == null) continue;
+                postRepository.findById(postId)
+                        .ifPresent(post -> post.updateLikeCount(actualCount));
 
-                post.updateLikeCount(Integer.parseInt(value));
+                // 동기화 후 Redis 캐시 보정
+                redisTemplate.opsForValue()
+                        .set("post:" + postId + ":likeCount", String.valueOf(actualCount));
+                redisTemplate.opsForSet().remove("like:dirty", postIdStr);
+            }catch (Exception e){
+                log.error("syncLikeCount 실패 postId={}", postIdStr, e);
             }
         }
     }

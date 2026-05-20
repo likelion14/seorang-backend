@@ -1,14 +1,16 @@
 package com.likelion.seorang.dto;
 
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.likelion.seorang.entity.Post;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
-
-@Getter @Setter
+@Getter
+@Setter
 @Builder
-public class PostListItemDto {
+public class PostAllResponse {
     private Long postId;
     private String imgUrl;
     private String tag1;
@@ -16,9 +18,12 @@ public class PostListItemDto {
     private String tag3;
     private Integer likeCount;
     private Long authorId;
+    @JsonProperty("isLiked")
+    private Boolean isLiked;
+    private Boolean isOwner;
 
-    public static PostListItemDto from(Post post) {
-        return PostListItemDto.builder()
+    public static PostAllResponse from(Post post, Boolean isLiked, Boolean isOwner) {
+        return PostAllResponse.builder()
                 .postId(post.getId())
                 .imgUrl(post.getImgUrl())
                 .tag1(post.getTag1())
@@ -26,6 +31,8 @@ public class PostListItemDto {
                 .tag3(post.getTag3())
                 .likeCount(post.getLikeCount())
                 .authorId(post.getUser().getId())
+                .isLiked(isLiked)
+                .isOwner(isOwner)
                 .build();
     }
 }

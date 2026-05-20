@@ -45,7 +45,7 @@ public class SecurityConfig {
         http
                 // REST API: CSRF 비활성화
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> {}) // 기본값. 필요 시 CorsConfigurationSource 빈 정의해서 커스터마이즈
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // 기본값. 필요 시 CorsConfigurationSource 빈 정의해서 커스터마이즈
 
                 // 세션 미사용
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -76,6 +76,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/refresh").permitAll()
                         .requestMatchers("/debug/claude/**").permitAll()
                         .requestMatchers("/api/booths").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
 
                         // 어드민 보호
                         .requestMatchers("/api/admin/**").denyAll()
@@ -105,13 +106,13 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // 허용 주소 설정
-        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "http://3.25.125.245:*", "https://quizley-fe.vercel.app"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "http://54.180.106.211:8080*", "https://likelion14th-swu-seorang.vercel.app"));
 
         // 허용 메서드 설정
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         // 헤더 목록 설정
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowedHeaders(List.of("*"));
 
         // 브라우저 자격 증명 허용
         config.setAllowCredentials(true);

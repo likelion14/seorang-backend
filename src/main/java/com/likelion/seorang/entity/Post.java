@@ -40,7 +40,7 @@ public class Post {
 
     // 좋아요 개수
     @Column(name = "like_count", nullable = false)
-    private Integer likeCount;
+    private Integer likeCount = 0;
 
     // 게시글 등록 시각
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -9,9 +9,7 @@ import java.util.List;
 
 public interface BoothRepository extends JpaRepository<Booth, Integer> {
 
-    @Query("select b from Booth b where " +
-            "(:day = 1 and b.day1Open = true) or " +
-            "(:day = 2 and b.day2Open = true) or " +
-            "(:day = 3 and b.day3Open = true)")
-    List<Booth> findAllBy(@Param("day") Integer day);
+    List<Booth> findAllByDay1OpenTrue();
+    List<Booth> findAllByDay2OpenTrue();
+    List<Booth> findAllByDay3OpenTrue();
 }
