@@ -77,9 +77,7 @@ public class PostService {
 
             int likeCount = (value != null)
                     ? Integer.parseInt(value)
-                    : postRepository.findById(post.getPostId())
-                            .map(Post::getLikeCount)
-                            .orElse(post.getLikeCount() != null ? post.getLikeCount() : 0);
+                    : postLikeRepository.countByPost_Id(post.getPostId());
 
             result.add(PostAllResponse.builder()
                     .postId(post.getPostId())
