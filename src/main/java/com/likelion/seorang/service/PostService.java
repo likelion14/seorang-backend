@@ -53,7 +53,11 @@ public class PostService {
     @Transactional(readOnly = true)
     public List<PostListItemDto> findAll() {
         return postRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(PostListItemDto::from)
+                .map(post -> {
+                    long realLikeCount = postLikeRepository.countByPostId(post.getId());
+                    post.updateLikeCount((int) realLikeCount);
+                    return PostListItemDto.from(post);
+                })
                 .toList();
     }
 
