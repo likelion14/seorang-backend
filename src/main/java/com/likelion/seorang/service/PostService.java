@@ -103,19 +103,19 @@ public class PostService {
                 () -> new InvalidLikeException("유저가 없습니다.")
         );
 
-        // 좋아요 개수 캐싱
         String redisKey = "post:" + postId + ":likeCount";
         redisTemplate.opsForValue().setIfAbsent(
                 redisKey,
                 String.valueOf(likedPost.getLikeCount())
         );
 
-        // 이미 좋아요 누른 게시글
+        // 이미 좋아요 누른 게시글 (좋아요 취소)
         if (postLikeRepository.existsByPost_IdAndUser_Id(postId, userId)) {
             postLikeRepository.deleteByPost_IdAndUser_Id(postId, userId);
-            // 좋아요
+            
             redisTemplate.opsForSet().add("like:dirty", postId.toString());
-            Long likeCount = redisTemplate.opsForValue().decrement(redisKey); // 캐시값 조정
+            
+            Long likeCount = redisTemplate.opsForValue().decrement(redisKey);
 
             if (likeCount < 0) {
                 redisTemplate.opsForValue().set(redisKey, "0");
@@ -135,6 +135,7 @@ public class PostService {
 
         redisTemplate.opsForSet().add("like:dirty", postId.toString());
         Long likeCount = redisTemplate.opsForValue().increment(redisKey);
+        
         return LikeResponse.of(true, likeCount.intValue());
     }
     
@@ -270,6 +271,7 @@ public class PostService {
         return fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
     }
 
+    // 5분 주기 동기화 스케줄러
     @Scheduled(fixedRate = 300000) // 5분
     @Transactional
     public void syncLikeCount() {
@@ -277,22 +279,28 @@ public class PostService {
         if (dirtyKeys == null || dirtyKeys.isEmpty()) return;
 
         for (String postIdStr : dirtyKeys) {
-            try{
+            try {
                 Long postId = Long.parseLong(postIdStr);
+                String redisKey = "post:" + postId + ":likeCount";
 
-                //DB count를 source of truth로 사용
-                int actualCount = postLikeRepository.countByPost_Id(postId);
+                String value = redisTemplate.opsForValue().get(redisKey);
+                
+                // 만약 캐시가 비어있다면 실제 post_like 테이블 count하기 (도커 재시작 대비)
+                int targetCount = (value != null) 
+                        ? Integer.parseInt(value) 
+                        : postLikeRepository.countByPost_Id(postId);
 
                 postRepository.findById(postId)
-                        .ifPresent(post -> post.updateLikeCount(actualCount));
+                        .ifPresent(post -> post.updateLikeCount(targetCount));
 
-                // 동기화 후 Redis 캐시 보정
-                redisTemplate.opsForValue()
-                        .set("post:" + postId + ":likeCount", String.valueOf(actualCount));
+                if (value == null) {
+                    redisTemplate.opsForValue().set(redisKey, String.valueOf(targetCount));
+                }
+
                 redisTemplate.opsForSet().remove("like:dirty", postIdStr);
-            }catch (Exception e){
+                
+            } catch (Exception e) {
                 log.error("syncLikeCount 실패 postId={}", postIdStr, e);
             }
         }
     }
-}
